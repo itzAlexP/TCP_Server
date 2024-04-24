@@ -25,13 +25,13 @@ bool NetworkManager::StartNetworkService() {
 	if (WSAStartup(ver, &wsData) == 0) {
 
 		//Crear socket
-		this->socketServer = socket(AF_INET, SOCK_STREAM, 0);
+		this->socketServer = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 		if (this->socketServer != INVALID_SOCKET) {
 
 			//Configuramos parametros de red
 			this->serverSocketAddressData.sin_family = AF_INET; //IPV4
-			this->serverSocketAddressData.sin_port = PORT; //ntohs para big endian, htons para little endian
+			this->serverSocketAddressData.sin_port = htons(PORT); //htons para big endians ntons/sin funcion para little endians
 			this->serverSocketAddressData.sin_addr.S_un.S_addr = INADDR_ANY; //Aceptar conexiones de cualquier IP
 
 			//Vinculamos socket con ip y puerto
@@ -96,21 +96,21 @@ std::string NetworkManager::ReceiveData() {
 
 	//-1 = Fallo en la conexion, 0 = cliente finaliza conexion o recibidos valores nulos
 	while ((bytesReceived = recv(this->socketClient, this->buffer, BUFFER_SIZE, 0)) > 0) {
-
+		
 		totalBytesReceived += bytesReceived - 1;
 		data += this->buffer;
-		//Mirar si esta toda la info y retornarla
+
+		//Mirar si esta toda la info usando el delimitador y retornarla
 		if (data[totalBytesReceived - 1] == DELIMITER) {
 			return data;
 		}
-		//Almacenar y esperar mas info
+		//Si no se ha recibido el delimitador limpiamos buffer hasta que llegue la faltante
 		else {
 			memset(this->buffer, 0, BUFFER_SIZE);
 		}
 	}
 
 	this->EndConnection();
-
 	return "-1";
 }
 
